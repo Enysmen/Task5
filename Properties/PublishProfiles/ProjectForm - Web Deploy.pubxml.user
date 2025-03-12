@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+This file is used by the publish/package process of your Web project. You can customize the behavior of this process
+by editing this MSBuild file. In order to learn more about this please visit https://go.microsoft.com/fwlink/?LinkID=208121. 
+-->
+<Project>
+  <PropertyGroup>
+    <TimeStampOfAssociatedLegacyPublishXmlFile />
+    <History>True|2025-03-11T19:13:21.1506071Z||;False|2025-03-11T21:12:32.0825908+02:00||;True|2025-03-11T21:02:22.8466346+02:00||;True|2025-03-11T20:54:05.1826738+02:00||;</History>
+    <LastFailureDetails />
+    <EncryptedPassword />
+  </PropertyGroup>
+  <ItemGroup>
+    <DestinationConnectionStrings Include="DefaultConnection">
+      <Value>Server=tcp:task5netcore.database.windows.net,1433%3bInitial Catalog=Task5%3bPersist Security Info=False%3bUser ID=AdminSQL%3bPassword=Sstt123456789%3bMultipleActiveResultSets=False%3bEncrypt=True%3bTrustServerCertificate=False%3bConnection Timeout=30%3b</Value>
+    </DestinationConnectionStrings>
+  </ItemGroup>
+  <ItemGroup>
+    <EFMigrations Include="Task5.Data.ApplicationDbContext">
+      <Value>Server=tcp:task5netcore.database.windows.net,1433%3bInitial Catalog=Task5%3bPersist Security Info=False%3bUser ID=AdminSQL%3bPassword=Sstt123456789%3bMultipleActiveResultSets=False%3bEncrypt=True%3bTrustServerCertificate=False%3bConnection Timeout=30%3b</Value>
+    </EFMigrations>
+  </ItemGroup>
+</Project>

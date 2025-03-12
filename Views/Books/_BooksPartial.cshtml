@@ -1,0 +1,29 @@
+﻿@model IEnumerable<Task5.Models.Book>
+@using System.Text.Json
+
+@foreach (var book in Model)
+{
+    // Сериализуем ReviewItems в JSON для передачи в data-атрибут
+    var reviewItemsJson = JsonSerializer.Serialize(book.ReviewItems);
+    <tr class="bookRow"
+        data-index="@book.Index"
+        data-cover="@book.CoverUrl"
+        data-title="@book.Title"
+        data-isbn="@book.ISBN"
+        data-authors="@book.Authors"
+        data-publisher="@book.Publisher"
+        data-genre="@book.Genre"
+        data-year="@book.Year"
+        data-description="@book.Description"
+        data-likes="@book.Likes"
+        data-reviews="@book.Reviews"
+        data-reviewitems='@reviewItemsJson'>
+        <td>@book.Index</td>
+        <td>@book.ISBN</td>
+        <td>@book.Title</td>
+        <td>@book.Authors</td>
+        <td>@book.Publisher</td>
+        <td>@book.Likes</td>
+        <td>@book.Reviews</td>
+    </tr>
+}

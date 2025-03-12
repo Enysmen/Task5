@@ -1,0 +1,258 @@
+﻿@using Task5.Models
+@model BooksViewModel
+@{
+    ViewData["Title"] = "Generating books";
+    
+}
+
+<h2 class="mb-4">Generating books</h2>
+
+<!-- Блок с параметрами (locale, seed, likes, reviews) -->
+<div class="row mb-3">
+    <div class="col-md-2">
+        <label class="form-label">Locale</label>
+        <select id="locale" class="form-select">
+            @if (Model.Locale == "en")
+            {
+                <option value="en" selected>English</option>
+            }
+            else
+            {
+                <option value="en">English</option>
+            }
+            @if (Model.Locale == "pt_BR")
+            {
+                <option value="pt_BR" selected>Brazilian Portuguese</option>
+            }
+            else
+            {
+                <option value="pt_BR">Brazilian Portuguese</option>
+            }
+            @if (Model.Locale == "pl")
+            {
+                <option value="pl" selected>Polish</option>
+            }
+            else
+            {
+                <option value="pl">Polish</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Seed</label>
+        <div class="input-group">
+            <input type="number" id="userSeed" class="form-control" value="@Model.UserSeed" />
+            <button id="randomSeed" class="btn btn-dark" title="Generate random seed">🔀</button>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Likes</label>
+        <div class="d-flex align-items-center">
+            <input type="range" id="avgLikes" min="0" max="10" step="0.1" value="@Model.AvgLikes" class="form-range me-2" />
+            <span id="avgLikesValue" style="width: 2.5rem;">@Model.AvgLikes</span>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Reviews</label>
+        <input type="number" id="avgReviews" step="0.1" value="@Model.AvgReviews" class="form-control" />
+    </div>
+</div>
+
+<!-- Таблица книг -->
+<div class="table-responsive">
+    <table class="table table-hover align-middle" id="booksTable">
+        <thead>
+            <tr>
+                <th>Index</th>
+                <th>ISBN</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Publisher</th>
+                <th>Likes</th>
+                <th>Reviews</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var book in Model.Books)
+            {
+                // Сериализуем ReviewItems в JSON
+                var reviewItemsJson = System.Text.Json.JsonSerializer.Serialize(book.ReviewItems);
+                <tr class="bookRow"
+                    data-index="@book.Index"
+                    data-cover="@book.CoverUrl"
+                    data-title="@book.Title"
+                    data-isbn="@book.ISBN"
+                    data-authors="@book.Authors"
+                    data-publisher="@book.Publisher"
+                    data-genre="@book.Genre"
+                    data-year="@book.Year"
+                    data-description="@book.Description"
+                    data-likes="@book.Likes"
+                    data-reviews="@book.Reviews"
+                    data-reviewitems='@reviewItemsJson'>
+                    <td>@book.Index</td>
+                    <td>@book.ISBN</td>
+                    <td>@book.Title</td>
+                    <td>@book.Authors</td>
+                    <td>@book.Publisher</td>
+                    <td>@book.Likes</td>
+                    <td>@book.Reviews</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Индикатор загрузки -->
+<div id="loading" class="text-center mt-3" style="display:none;">
+    <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        let currentOffset = @Model.Books.Count;
+        let isLoading = false;
+
+        function loadBooks(reset = false) {
+            if (isLoading) return;
+            isLoading = true;
+            if (reset) {
+                currentOffset = 0;
+                $("#booksTable tbody").empty();
+            }
+            $("#loading").show();
+
+        
+
+            const selectedLocale = $("#locale").val();
+           
+
+            $.get('@Url.Action("LoadMore", "Books")', {
+                locale: selectedLocale,
+                userSeed: $("#userSeed").val(),
+                avgLikes: $("#avgLikes").val(),
+                avgReviews: $("#avgReviews").val(),
+                offset: currentOffset
+            }).done(function (data) {
+                $("#booksTable tbody").append(data);
+                // Предполагаем, что каждая подгрузка возвращает фиксированное число строк:
+                currentOffset += $(data).filter("tr").length;
+            }).always(function () {
+                $("#loading").hide();
+                isLoading = false;
+            });
+        }
+
+        $("#locale, #userSeed, #avgLikes, #avgReviews").on("change", function () {
+            $("#avgLikesValue").text($("#avgLikes").val());
+            loadBooks(true);
+            $("#booksTable tbody").empty();
+        });
+
+        $("#randomSeed").on("click", function () {
+            let randomSeed = Math.floor(Math.random() * 1000000);
+            $("#userSeed").val(randomSeed);
+            loadBooks(true);
+            $("#booksTable tbody").empty();
+        });
+
+        $(window).scroll(function () {
+            if ($(window).scrollTop() + $(window).height() >= $(document).height() - 100) {
+                loadBooks(false);
+            }
+        });
+
+
+        // При клике на строку книги показываем/скрываем детальный блок
+        $(document).on("click", ".bookRow", function () {
+            const $row = $(this);
+
+            // Ищем уже вставленную "детальную" строку сразу за этой
+            let $detailRow = $row.next(".detailRow");
+            if ($detailRow.length > 0) {
+                // Если детальная строка уже есть, просто переключаем её видимость
+                $detailRow.toggle();
+                return;
+            }
+
+            // Считываем данные из data-атрибутов
+            const cover = $row.data("cover");
+            const title = $row.data("title");
+            const isbn = $row.data("isbn");
+            const authors = $row.data("authors");
+            const publisher = $row.data("publisher");
+            const genre = $row.data("genre");
+            const year = $row.data("year");
+            const description = $row.data("description");
+            const likes = $row.data("likes");
+            const reviews = $row.data("reviews");
+
+            let reviewItems = $row.data("reviewitems");
+            // Если по каким-то причинам reviewItems окажется строкой, можно проверить тип:
+            if (typeof reviewItems === "string") {
+                reviewItems = JSON.parse(reviewItems);
+            }
+
+            // Формируем HTML для списка отзывов
+            let reviewsHtml = "";
+            if (reviewItems.length > 0) {
+                reviewsHtml = reviewItems.map(r => `
+                    <li>
+                        <strong>${r.Author}:</strong> "${r.Text}"
+                    </li>
+                `).join("");
+            } else {
+                reviewsHtml = "<li>No reviews</li>";
+            }
+
+            // Добавим в detailHtml, например:
+            const detailHtml = `
+            <tr class="detailRow">
+                <td colspan="7">
+                    <div class="card mb-3">
+                        <div class="row g-0">
+                            <div class="col-md-4">
+                                <img src="${cover}" class="img-fluid rounded-start" alt="Cover">
+                            </div>
+                            <div class="col-md-8">
+                                <div class="card-body">
+                                    <h5 class="card-title">${title}</h5>
+                                    <p class="card-text">
+                                        <strong>Author:</strong> ${authors} <br>
+                                        <strong>Publisher:</strong> ${publisher} <br>
+                                        <strong>Genre:</strong> ${genre} <br>
+                                        <strong>Year:</strong> ${year} <br>
+                                        <strong>ISBN:</strong> ${isbn}
+                                    </p>
+                                    <p class="card-text">
+                                        <em>${description}</em>
+                                    </p>
+                                    <div class="mt-3">
+                                        <strong>Reviews:</strong>
+                                        <ul>${reviewsHtml}</ul>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <button class="btn btn-sm btn-primary">
+                                            <i class="bi bi-hand-thumbs-up"></i> Like (${likes})
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        `;
+
+            // Вставляем строку-деталь сразу после текущей
+            $row.after(detailHtml);
+        });
+
+           
+           
+    </script>
+}
